@@ -80,11 +80,15 @@ node "$SKILL_DIR/scripts/doctor.js"
 
 **AI 按报告分情况引导用户**（不要让用户自己看懂报告）：
 1. **缺系统依赖** → 把报告里对应平台的安装命令复制给用户（脚本已按 Win/Mac 给好），让其装完。
-2. **缺 / 占位 API Key** → 引导：去 https://console.volcengine.com/speech/new/setting/apikeys 生成「一个」新版 API Key；然后写入 `~/.claude/skills/.env`：
+2. **缺 / 占位 API Key** → 按以下流程引导用户（火山引擎·豆包语音服务，共 40h 免费额度）：
+   1. 登录控制台 https://console.volcengine.com/speech/new/overview
+   2. 左侧「语音识别」→ 开通「录音文件识别 1.0」，**标准版 + 极速版都开**（各 20h、共 ≈40h，独立抵扣）
+   3. 左侧「API Key 管理」→ 复制 API Key
+   4. 写入 `~/.claude/skills/.env`：
    ```bash
    echo "VOLCENGINE_API_KEY=粘贴你的key" >> "$HOME/.claude/skills/.env"
    ```
-3. **某个资源未开通**（报告会精确指出是极速版还是标准版）→ 引导去控制台开通对应资源；默认 auto 轮流需两个都开（各 20h 免费、共 ≈40h），只想用一个就转录时加 `--flash` / `--v3-standard`。
+3. **某个资源未开通**（报告会精确指出是极速版还是标准版）→ 引导去控制台开通对应「录音文件识别 1.0」资源；默认 auto 轮流需两个都开（各 20h 免费、共 ≈40h），只想用一个就转录时加 `--flash` / `--v3-standard`。
 4. 用户修完 → **重跑 `node "$SKILL_DIR/scripts/doctor.js"`**，直到全绿（自动写 `.setup_done`），再进入步骤 0。
 
 > 全程不要替用户去控制台点按钮或粘贴他的私有 key 到别处；只给清晰可复制的命令和链接。

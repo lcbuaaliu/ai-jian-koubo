@@ -32,7 +32,20 @@ https://github.com/lcbuaaliu/ai-jian-koubo
 
 agent 会读 README,自己把它装到本地 skills 目录、配好环境、跑一遍自检,约 1 分钟。有文件系统权限的 agent 直接帮你装好;没有的话,也能在当前会话里照 [`SKILL.md`](SKILL.md) 直接跑一遍。
 
-唯一需要你**亲自做**的一步:办一个**火山引擎 API Key**(语音转录用,有免费额度)。去[火山引擎新版控制台](https://console.volcengine.com/speech/new/setting/apikeys)生成**一个** key,并开通两个资源(各 **20h** 免费额度,独立抵扣):**录音文件识别-极速版**(`auc_turbo`) + **标准版**(`auc`)。装的时候 agent 会引导你把 key 填进去。
+唯一需要你**亲自做**的一步:办一个**火山引擎 API Key**(语音转录用,共 **40h 免费额度**,完全够用)。装的时候 agent 会引导你把 key 填进去。
+
+### 办火山引擎 API Key(约 2 分钟)
+
+1. 打开并登录**火山引擎 · 豆包语音服务**控制台:
+   [console.volcengine.com/speech](https://console.volcengine.com/speech/new/overview)
+2. 点左侧 **语音识别**,开通 **「录音文件识别 1.0」** —— **标准版**和**极速版都开通**(各 20h、共 40h 免费额度,独立抵扣)。
+3. 点左侧 **API Key 管理**,**复制你的 API Key**。
+4. 把 key 发给 agent,它会帮你写进 `~/.claude/skills/.env`。也可以自己写:
+   ```bash
+   echo "VOLCENGINE_API_KEY=粘贴你的key" >> ~/.claude/skills/.env
+   ```
+
+> 默认两个引擎轮流用、吃满 ≈40h;只想用一个就在转录时加 `--flash`(极速版)或 `--v3-standard`(标准版)。
 
 ## 使用
 
