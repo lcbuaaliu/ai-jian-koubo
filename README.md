@@ -1,6 +1,10 @@
 # AI剪口播
 
-一个**剪口播视频的 coding-agent skill**:自动转录 → 识别口误/口癖/静音 → 网页波形审核 → 导出 FCPXML,拖进剪映或 Final Cut Pro 完成最后一刀。核心是一份 [`SKILL.md`](SKILL.md),**任何能读文件、能跑 shell 的 coding agent 都能用**(Claude Code、Codex、Gemini CLI、Kimi 等);也可以直接装进 Claude Code 当 skill。
+一个**剪口播视频的 coding-agent skill**:自动转录 → 识别口误/口癖/静音 → 网页波形审核 → 导出 FCPXML,拖进剪映或 Final Cut Pro 完成最后一刀。核心是一份 [`SKILL.md`](SKILL.md),**任何支持 skill、能读文件、能跑 shell 的 coding agent 都能装来用**,不绑定特定工具。
+
+![审核页界面](assets/review-ui.png)
+
+> 审核网页:左侧逐字稿点划即删,中上方播放/参数,右侧调静音留白,底部三色波形(灰=静音、红=选中删除、黄=算法额外切掉)。改到满意点「导出 FCPXML」。
 
 ## 这个 Skill 做什么
 
@@ -20,7 +24,7 @@
 
 ## 安装
 
-把这个仓库地址发给你的 coding agent(Claude Code、Codex、Gemini CLI、Kimi 等),说一句 **「装一下」**:
+把这个仓库地址发给你的 coding agent,说一句 **「装一下」**:
 
 ```text
 https://github.com/lcbuaaliu/ai-jian-koubo
@@ -68,10 +72,9 @@ agent 会按 [`SKILL.md`](SKILL.md) 的流程跑:
 
 ## 依赖要求
 
-- 一个有文件系统访问、能跑 shell 命令的 coding agent
+- 一个支持 skill、有文件系统访问、能跑 shell 命令的 coding agent(不绑定特定工具)
 - `node` · `python3` · `ffmpeg` · `curl`(`doctor.js` 会按平台给安装命令)
 - 一个[火山引擎](https://console.volcengine.com/speech/new/setting/apikeys)账号(用于语音转录,有免费额度)
-- Claude Code **不是必需** —— 它只是众多可用 agent 之一
 
 ## 隐私
 
