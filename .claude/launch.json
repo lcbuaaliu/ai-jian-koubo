@@ -1,0 +1,14 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev-preview",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["scripts/dev.sh", "8899"],
+      "port": 8899,
+      "cwd": "${workspaceFolder}",
+      "autoPort": false
+    }
+  ],
+  "autoVerify": false
+}
