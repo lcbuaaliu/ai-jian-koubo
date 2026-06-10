@@ -60,13 +60,22 @@ output/YYYY-MM-DD_HH-MM_视频名/剪口播/
 
 ## 执行步骤
 
+> **路径约定（重要）**：本 skill 不绑定特定 agent，**不要假设它装在 `~/.claude/skills/`**。
+> 下面命令里的 `SKILL_DIR` 一律指**本 skill 的安装目录**（即你加载本 `SKILL.md` 的那个目录，
+> 含 `scripts/`、`用户习惯/`）。执行前把它设成你实际加载 skill 的绝对路径即可：
+> ```bash
+> SKILL_DIR="<本 skill 的安装目录>"   # 例：Claude Code 默认 ~/.claude/skills/AI剪口播
+> ```
+> API Key 的查找顺序见 [scripts/lib/load_api_key.sh](scripts/lib/load_api_key.sh)：
+> 环境变量 `VOLCENGINE_API_KEY` → `$SKILL_DIR/.env` →（兼容旧约定）上一级 `.env`。
+
 ### 步骤 -1: 首次引导（只在第一次跑）
 
 > **目的**：第一次用本 Skill 的人通常没装依赖、没配火山引擎 key。先做一次自检并手把手引导，配好后写标记文件，**以后永久跳过，不再打扰**。
 
-**闸门**：先看标记文件是否存在。
+**闸门**：先看标记文件是否存在（`SKILL_DIR` = 本 skill 安装目录，见上方「路径约定」）。
 ```bash
-SKILL_DIR="$HOME/.claude/skills/AI剪口播"
+SKILL_DIR="<本 skill 的安装目录>"
 [ -f "$SKILL_DIR/.setup_done" ] && echo "已配置，跳过引导" || echo "需要引导"
 ```
 - 存在 `.setup_done` → **直接进入步骤 0**，不要跑自检、不要提引导。
@@ -76,7 +85,7 @@ SKILL_DIR="$HOME/.claude/skills/AI剪口播"
 node "$SKILL_DIR/scripts/doctor.js"
 ```
 
-`doctor.js` 做三层检查并输出人话报告：① 系统依赖（ffmpeg/node/python3/curl）② `~/.claude/skills/.env` 里的 `VOLCENGINE_API_KEY` ③ 联网实测 key 与极速版/标准版两个资源是否开通。**全绿时它自己写 `.setup_done` 并退出 0**；有缺项退出 1。
+`doctor.js` 做三层检查并输出人话报告：① 系统依赖（ffmpeg/node/python3/curl）② `VOLCENGINE_API_KEY`（环境变量或 `.env`，查找顺序见 `scripts/lib/load_api_key.sh`）③ 联网实测 key 与极速版/标准版两个资源是否开通。**全绿时它自己写 `.setup_done` 并退出 0**；有缺项退出 1。
 
 **AI 按报告分情况引导用户**（不要让用户自己看懂报告）：
 1. **缺系统依赖** → 把报告里对应平台的安装命令复制给用户（脚本已按 Win/Mac 给好），让其装完。
@@ -84,9 +93,9 @@ node "$SKILL_DIR/scripts/doctor.js"
    1. 登录控制台 https://console.volcengine.com/speech/new/overview
    2. 左侧「语音识别」→ 开通「录音文件识别 1.0」，**标准版 + 极速版都开**（各 20h、共 ≈40h，独立抵扣）
    3. 左侧「API Key 管理」→ 复制 API Key
-   4. 写入 `~/.claude/skills/.env`：
+   4. 写入 `$SKILL_DIR/.env`（推荐，跟着 skill 走；也可 `export VOLCENGINE_API_KEY=...`）：
    ```bash
-   echo "VOLCENGINE_API_KEY=粘贴你的key" >> "$HOME/.claude/skills/.env"
+   echo "VOLCENGINE_API_KEY=粘贴你的key" >> "$SKILL_DIR/.env"
    ```
 3. **某个资源未开通**（报告会精确指出是极速版还是标准版）→ 引导去控制台开通对应「录音文件识别 1.0」资源；默认 auto 轮流需两个都开（各 20h 免费、共 ≈40h），只想用一个就转录时加 `--flash` / `--v3-standard`。
 4. 用户修完 → **重跑 `node "$SKILL_DIR/scripts/doctor.js"`**，直到全绿（自动写 `.setup_done`），再进入步骤 0。
@@ -111,7 +120,7 @@ node "$SKILL_DIR/scripts/doctor.js"
 ### 步骤 1-4: 一键转录流水线（无需 AI）
 
 ```bash
-SKILL_DIR="$HOME/.claude/skills/AI剪口播"
+SKILL_DIR="<本 skill 的安装目录>"   # 见上方「路径约定」
 VIDEO_PATH="/path/to/视频.mp4"
 BASE_DIR="$HOME/Desktop/output/$(date +%Y-%m-%d_%H-%M)_$(basename "$VIDEO_PATH" | sed 's/\.[^.]*$//')/剪口播"
 
@@ -313,12 +322,13 @@ node "$SKILL_DIR/scripts/extract_text.js" \
 
 ## 配置
 
-火山引擎 API Key 存放在 `~/.claude/skills/.env`，字段 `VOLCENGINE_API_KEY`：
+火山引擎 API Key 通过 `VOLCENGINE_API_KEY` 提供，查找顺序见 [scripts/lib/load_api_key.sh](scripts/lib/load_api_key.sh)：
+环境变量 → `$VOLCENGINE_ENV_FILE` → `$SKILL_DIR/.env` →（兼容旧约定）skill 上一级的 `.env`。推荐写在 `$SKILL_DIR/.env`：
 ```
 VOLCENGINE_API_KEY=your_api_key_here
 ```
 
-去[新版控制台](https://console.volcengine.com/speech/new/setting/apikeys)生成 **一个** API Key 即可——所有引擎共用这同一个 `VOLCENGINE_API_KEY`（均为新版控制台单 `X-Api-Key` 认证）。
+去[新版控制台](https://console.volcengine.com/speech/new/overview)生成 **一个** API Key 即可——所有引擎共用这同一个 `VOLCENGINE_API_KEY`（均为新版控制台单 `X-Api-Key` 认证）。
 
 默认 `auto` 轮流模式会交替用极速版和标准版，**需同时开通两个资源**：「录音文件识别 - 极速版」（`volc.bigasr.auc_turbo`）+「录音文件识别 - 标准版」（`volc.bigasr.auc`）。两者各有 20h 免费额度、各自独立抵扣，轮流即可吃满 ≈40h。若只想/只开通了其中一个资源，加 `--flash` 或 `--v3-standard` 固定使用。
 

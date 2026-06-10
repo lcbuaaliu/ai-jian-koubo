@@ -27,9 +27,15 @@ const { spawnSync } = require('child_process');
 const isWin = process.platform === 'win32';
 const isMac = process.platform === 'darwin';
 const HOME = os.homedir();
-const ENV_FILE = path.join(HOME, '.claude', 'skills', '.env');
 const SKILL_DIR = path.resolve(__dirname, '..');
 const SENTINEL = path.join(SKILL_DIR, '.setup_done');
+// .env 候选位置（与 agent / 安装位置无关）：显式指定 → skill 内 → skill 上一级（兼容 Claude Code 旧约定）
+const ENV_CANDIDATES = [
+  process.env.VOLCENGINE_ENV_FILE,
+  path.join(SKILL_DIR, '.env'),
+  path.join(path.dirname(SKILL_DIR), '.env'),
+].filter(Boolean);
+const RECOMMEND_ENV = path.join(SKILL_DIR, '.env');
 
 const args = process.argv.slice(2);
 const FORCE = args.includes('--force');
@@ -101,36 +107,50 @@ function checkDeps() {
 // ── 第二层：凭证文件 ─────────────────────────────────────
 const PLACEHOLDERS = ['your_api_key_here', 'your-api-key', 'xxx', '<your_api_key>', ''];
 
-function readKey() {
-  if (!fs.existsSync(ENV_FILE)) return { state: 'missing_file' };
+function parseKeyFromFile(f) {
   let key = '';
-  for (const line of fs.readFileSync(ENV_FILE, 'utf8').split(/\r?\n/)) {
+  for (const line of fs.readFileSync(f, 'utf8').split(/\r?\n/)) {
     const m = line.match(/^\s*VOLCENGINE_API_KEY\s*=\s*(.*)$/);
     if (m) key = m[1].trim().replace(/^["']|["']$/g, '');
   }
-  if (!key) return { state: 'missing_key' };
-  if (PLACEHOLDERS.includes(key.toLowerCase())) return { state: 'placeholder' };
-  return { state: 'ok', key };
+  return key;
+}
+
+function readKey() {
+  // 1) 环境变量优先（最通用，任何 agent / CI 都能用）
+  const envKey = (process.env.VOLCENGINE_API_KEY || '').trim();
+  if (envKey && !PLACEHOLDERS.includes(envKey.toLowerCase())) {
+    return { state: 'ok', key: envKey, source: '环境变量' };
+  }
+  // 2) 依次查候选 .env 文件
+  let sawFile = false;
+  for (const f of ENV_CANDIDATES) {
+    if (!fs.existsSync(f)) continue;
+    sawFile = true;
+    const key = parseKeyFromFile(f);
+    if (!key) continue;
+    if (PLACEHOLDERS.includes(key.toLowerCase())) return { state: 'placeholder', source: f };
+    return { state: 'ok', key, source: f };
+  }
+  return { state: sawFile ? 'missing_key' : 'missing_file' };
 }
 
 function checkEnv() {
   console.log(C.bold('\n[2/3] API Key 凭证'));
   const r = readKey();
-  const apply = '   申请：https://console.volcengine.com/speech/new/setting/apikeys';
-  const where = `   位置：${ENV_FILE}`;
   if (r.state === 'ok') {
-    console.log(`  ${OK} 已在 .env 找到 VOLCENGINE_API_KEY（${C.dim(r.key.slice(0, 8) + '…')}）`);
+    console.log(`  ${OK} 找到 VOLCENGINE_API_KEY（${C.dim(r.key.slice(0, 8) + '…')}，来自 ${r.source}）`);
     return r;
   }
   const msg = {
-    missing_file: `${BAD} 找不到凭证文件`,
+    missing_file: `${BAD} 没找到 API Key（环境变量和 .env 都没有）`,
     missing_key: `${BAD} .env 里缺 VOLCENGINE_API_KEY`,
     placeholder: `${WARN} VOLCENGINE_API_KEY 还是占位符，没换成真 key`,
   }[r.state];
   console.log(`  ${msg}`);
-  console.log(C.yellow(where));
-  console.log(C.yellow(apply));
-  console.log(C.dim('   写入示例（一行）：echo "VOLCENGINE_API_KEY=你的key" >> ' + ENV_FILE));
+  console.log(C.yellow(`   方式一(推荐)：在 ${RECOMMEND_ENV} 写一行  VOLCENGINE_API_KEY=你的key`));
+  console.log(C.yellow('   方式二：export VOLCENGINE_API_KEY=你的key'));
+  console.log(C.yellow('   key 申请：https://console.volcengine.com/speech/new/overview'));
   return r;
 }
 

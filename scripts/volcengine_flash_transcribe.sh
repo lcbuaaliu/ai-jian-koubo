@@ -25,24 +25,9 @@ if [ -z "$AUDIO_INPUT" ]; then
   exit 1
 fi
 
-# ── 读取 API Key ────────────────────────────────────────
+# ── 读取 API Key（agent / 安装位置无关，见 lib/load_api_key.sh）──
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ENV_FILE="$(dirname "$(dirname "$SCRIPT_DIR")")/.env"
-
-if [ ! -f "$ENV_FILE" ]; then
-  echo "❌ 找不到 $ENV_FILE"
-  echo "   请先创建该文件并填入: VOLCENGINE_API_KEY=<你的新版控制台 API Key>"
-  echo "   申请地址: https://console.volcengine.com/speech/new/setting/apikeys"
-  exit 1
-fi
-
-API_KEY=$(grep '^VOLCENGINE_API_KEY=' "$ENV_FILE" | cut -d'=' -f2 | tr -d '\r\n ')
-
-if [ -z "$API_KEY" ]; then
-  echo "❌ $ENV_FILE 缺少 VOLCENGINE_API_KEY"
-  echo "   申请地址: https://console.volcengine.com/speech/new/setting/apikeys"
-  exit 1
-fi
+. "$SCRIPT_DIR/lib/load_api_key.sh"
 
 # ── 校验音频（本地文件）──────────────────────────────────
 if [[ ! "$AUDIO_INPUT" =~ ^https?:// ]]; then
@@ -145,7 +130,7 @@ echo "   HTTP: $HTTP_CODE"
 echo "   状态码: ${STATUS:-未返回}"
 echo "   消息: ${MSG:-未返回}"
 case "$STATUS" in
-  45000010) echo "   提示: API Key 无效，检查 $ENV_FILE 的 VOLCENGINE_API_KEY 是否来自新版控制台" ;;
+  45000010) echo "   提示: API Key 无效，检查 VOLCENGINE_API_KEY 是否来自新版控制台" ;;
   45000151) echo "   提示: 资源未授权，去控制台开通「录音文件识别极速版」" ;;
   45000003) echo "   提示: 请求参数错误（可能是音频格式 / 大小不支持）" ;;
   55000031) echo "   提示: 服务端处理失败，建议稍后重试" ;;

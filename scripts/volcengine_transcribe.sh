@@ -14,17 +14,9 @@ if [ -z "$AUDIO_URL" ]; then
   exit 1
 fi
 
-# 获取 API Key
+# 获取 API Key（agent / 安装位置无关，见 lib/load_api_key.sh）
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ENV_FILE="$(dirname "$(dirname "$SCRIPT_DIR")")/.env"
-
-if [ ! -f "$ENV_FILE" ]; then
-  echo "❌ 找不到 $ENV_FILE"
-  echo "请创建: cp .env.example .env 并填入 VOLCENGINE_API_KEY"
-  exit 1
-fi
-
-API_KEY=$(grep VOLCENGINE_API_KEY "$ENV_FILE" | cut -d'=' -f2)
+. "$SCRIPT_DIR/lib/load_api_key.sh"
 
 echo "🎤 提交火山引擎转录任务..."
 echo "音频 URL: $AUDIO_URL"

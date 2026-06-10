@@ -24,21 +24,9 @@ if [ -z "$AUDIO_INPUT" ]; then
   exit 1
 fi
 
-# ── 读取凭证（与 flash 共用同一个新版控制台 API Key）────────────
+# ── 读取凭证（与 flash 共用同一个新版控制台 API Key；见 lib/load_api_key.sh）──
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ENV_FILE="$(dirname "$(dirname "$SCRIPT_DIR")")/.env"
-
-if [ ! -f "$ENV_FILE" ]; then
-  echo "❌ 找不到 $ENV_FILE"
-  exit 1
-fi
-
-API_KEY=$(grep '^VOLCENGINE_API_KEY=' "$ENV_FILE" | cut -d'=' -f2 | tr -d '\r\n ')
-
-if [ -z "$API_KEY" ]; then
-  echo "❌ $ENV_FILE 缺少 VOLCENGINE_API_KEY（新版控制台 API Key）"
-  exit 1
-fi
+. "$SCRIPT_DIR/lib/load_api_key.sh"
 
 # ── 生成唯一 Request ID（提交和查询复用同一个）──────────────
 REQUEST_ID=$(uuidgen 2>/dev/null || python3 -c "import uuid; print(uuid.uuid4())")
